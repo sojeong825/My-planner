@@ -5,7 +5,9 @@ create type public.task_bucket as enum ('today', 'week', 'someday');
 create table public.tasks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  title text not null check (length(trim(title)) > 0),
+  -- trim() 은 기본값이 ASCII 공백(0x20)뿐이라 탭이나 줄바꿈만으로 된 제목을 통과시킨다.
+  -- 잘라낼 문자를 명시해야 실제로 "내용 없는 제목"을 막는다.
+  title text not null check (length(btrim(title, E' \t\n\r')) > 0),
   bucket public.task_bucket not null default 'today',
   -- 분수 순위. 정수가 아니라 실수여야 두 항목 사이에 끼워 넣을 수 있다.
   position double precision not null,
