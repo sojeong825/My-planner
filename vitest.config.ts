@@ -1,5 +1,5 @@
 import { config } from 'dotenv'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 config({ path: '.env.test' })
 
@@ -11,6 +11,10 @@ export default defineConfig({
     include: integration
       ? ['src/**/*.integration.test.ts']
       : ['src/**/*.test.ts'],
-    exclude: integration ? [] : ['**/node_modules/**', '**/*.integration.test.ts'],
+    // Extend Vitest's default excludes (node_modules, dist, …) rather than
+    // replacing them; unit mode additionally excludes the integration file.
+    exclude: integration
+      ? configDefaults.exclude
+      : [...configDefaults.exclude, '**/*.integration.test.ts'],
   },
 })

@@ -26,7 +26,13 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (createdIds.length > 0) {
-    await me.from('tasks').delete().in('id', createdIds)
+    const { error } = await me.from('tasks').delete().in('id', createdIds)
+    // afterAll must not throw — that would mask the real test results — but a
+    // silently failed cleanup would leave rows behind in the live project, so
+    // surface which ids survived.
+    if (error) {
+      console.error(`정리 삭제 실패, 다음 id 가 남아있을 수 있음: ${createdIds.join(', ')}`, error)
+    }
   }
 })
 
@@ -88,9 +94,17 @@ describe('tasks 테이블', () => {
   })
 
   it('빈 제목은 넣을 수 없다', async () => {
-    const { error } = await me
+    const { data, error } = await me
       .from('tasks')
       .insert({ user_id: myUserId, title: '   ', position: 9 })
+      .select('id')
+
+    // 이 삽입은 실패해야 정상이다. 하지만 제약조건이 깨져서 성공해 버리면,
+    // 그 행의 id 를 여기서 잡아두지 않는 한 정리 대상에서 빠져 실제 프로젝트에 남는다.
+    // 정리가 가장 필요한 순간이 바로 이 테스트가 실패하는 순간이다.
+    if (data) {
+      createdIds.push(...data.map((row) => row.id))
+    }
 
     expect(error).not.toBeNull()
   })
