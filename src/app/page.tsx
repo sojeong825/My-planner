@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
+import { TaskBoard } from '@/components/TaskBoard'
 import { createClient } from '@/lib/supabase/server'
+import { listTasks } from '@/lib/tasks/queries'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -9,5 +11,7 @@ export default async function HomePage() {
     redirect('/login')
   }
 
-  return <main className="p-6">로그인됨: {String(data.claims.email)}</main>
+  const tasks = await listTasks(supabase)
+
+  return <TaskBoard initialTasks={tasks} />
 }
